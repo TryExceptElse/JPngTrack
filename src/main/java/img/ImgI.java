@@ -1,8 +1,8 @@
 package img;
 
-public interface ImgI {
+interface ImgI {
     int getWidth();
     int getHeight();
-    Iterable<Integer> pixels();
-    Iterable<Integer> offsetPixels(int xOffset, int yOffset);
+    IPixelIterable pixels();
+    IPixelIterable offsetPixels(int xOffset, int yOffset);
 }

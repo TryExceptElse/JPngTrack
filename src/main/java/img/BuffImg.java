@@ -3,7 +3,6 @@ package img;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 import javax.imageio.ImageIO;
 
 class BuffImg extends Img {
@@ -31,14 +30,15 @@ class BuffImg extends Img {
         return imgSource.getHeight();
     }
 
-    public Iterable<Integer> offsetPixels(int xOffset, int yOffset) {
+    public IPixelIterable offsetPixels(int xOffset, int yOffset) {
+        validateOffsets(xOffset, yOffset);
         return new Pixels(imgSource, xOffset, yOffset);
     }
 
     /**
      * Class used as iterable to allow iteration over pixels of Img
      */
-    private class Pixels implements Iterable<Integer>{
+    private class Pixels implements IPixelIterable{
         BufferedImage src;
         int xOffset;
         int yOffset;
@@ -53,14 +53,14 @@ class BuffImg extends Img {
          * Iterates over each pixel in src image
          * @return Iterator
          */
-        public Iterator<Integer> iterator() {
+        public IPixelIterator iterator() {
             return new PixelIterator(src, xOffset, yOffset);
         }
 
         /**
          * Iterator for Pixels Iterable. Returns each pixel in image
          */
-        private class PixelIterator implements Iterator<Integer>{
+        private class PixelIterator implements IPixelIterator{
             BufferedImage src;
             int srcWidth;
             int srcHeight;
@@ -109,6 +109,17 @@ class BuffImg extends Img {
                 }
                 // otherwise, get rgb value of pixel at position x,y
                 return src.getRGB(pixelX, pixelY);
+            }
+
+            /**
+             * Returns whether PixelIterator has a non-null pixel left
+             * to be returned
+             */
+            @Override
+            public boolean hasNonNullLeft() {
+                return hasNext() &&
+                        xIndex + xOffset < srcWidth &&
+                        yIndex + yOffset < srcHeight;
             }
         }
     }

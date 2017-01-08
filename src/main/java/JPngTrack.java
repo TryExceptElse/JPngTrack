@@ -48,6 +48,16 @@ public final class JPngTrack {
     ) throws IOException{
         Img imgA = Img.fromPath(pathA);
         Img imgB = Img.fromPath(pathB);
+        return imgA.appMotion(imgB, xGate, yGate);
+    }
+
+    /**
+     * Returns percentage similarity between two pixel RGB values
+     * @param aRGB: int
+     * @param bRGB: int
+     * @return float from 0 to 1 inclusive.
+     */
+    private static float compareRGB(int aRGB, int bRGB){
 
     }
 }
