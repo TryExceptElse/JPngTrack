@@ -32,7 +32,61 @@ public abstract class Img implements ImgI{
      * @return float[2] (x, y)
      */
     public float[] appMotion(Img other, float xGate, float yGate){
-        return null;
+        if (getHeight() != getHeight() || getWidth() != getWidth()){
+            throw new IllegalArgumentException(String.format(
+                    "images to compare for motion are of different size." +
+                    "(%s, %s) vs (%s, %s)",
+                    getWidth(), getHeight(),
+                    other.getWidth(), other.getHeight()
+            ));
+        }
+        int xIntGate = (int) xGate;
+        int yIntGate = (int) yGate;
+        float leastDiff = 1f;
+        int bestXOffset = 0;
+        int bestYOffset = 0;
+        float diff; // difference of each comparison
+        for (int xOffset = -xIntGate; xOffset < xIntGate; xOffset ++){
+            for (int yOffset = -yIntGate; yOffset < yIntGate; yOffset ++){
+                diff = diffAtOffset(other, xOffset, yOffset, leastDiff);
+                if (diff < leastDiff){
+                    leastDiff = diff;
+                    bestXOffset = xOffset;
+                    bestYOffset = yOffset;
+                }
+            }
+        }
+        return new float[]{(float)bestXOffset, (float)bestYOffset};
+    }
+
+    /**
+     * Returns percentage similarity between two images with a
+     * given offset.
+     * if difference is greater than exclusionVal,
+     * returns 1. (max difference)
+     * This can speed up operations that only need to test if
+     * difference is less than some value-to-beat.
+     * @param otherImg: Img
+     * @param xOffset: int
+     * @param yOffset: int
+     * @param exclusionVal: float
+     * @return float
+     */
+    private float diffAtOffset(
+            Img otherImg,
+            int xOffset,
+            int yOffset,
+            float exclusionVal
+        ){
+        float cumulativeDiff = 0f;
+        for (int[] colorPair : pixelPairs(otherImg, xOffset, yOffset)){
+            cumulativeDiff += ColorUtil.compareRGB(colorPair[0], colorPair[1]);
+            if (cumulativeDiff > exclusionVal){
+                return 1f;
+            }
+        }
+        int nPixels = getHeight() * getWidth();
+        return cumulativeDiff / nPixels;
     }
 
     /**
@@ -49,6 +103,10 @@ public abstract class Img implements ImgI{
                     xOffset, yOffset, getWidth(), getHeight()
             ));
         }
+    }
+
+    private Iterable<int[]> pixelPairs(Img otherImg, int xOffset, int yOffset){
+        return new PixelPairs(this, otherImg, xOffset, yOffset);
     }
 
     /**
@@ -109,7 +167,7 @@ public abstract class Img implements ImgI{
                 Integer aRGB;
                 Integer bRGB;
                 // loop until return
-                if (!bIterator.hasNonNullLeft() || !aIterator.hasNext()){
+                if (!aIterator.hasNonNullLeft() || !bIterator.hasNext()){
                     // if there is no non-null left, raise iterator error
                     throw new NoSuchElementException();
                 }
@@ -118,7 +176,7 @@ public abstract class Img implements ImgI{
                 do {
                     aRGB = aIterator.next();
                     bRGB = bIterator.next();
-                } while (bRGB == null);
+                } while (aRGB == null);
                 return new int[] {aRGB, bRGB};
             }
         }
