@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import static java.lang.Math.abs;
+
 /**
  * Class handling pixel accessing and other methods for a passed image
  */
@@ -79,13 +81,13 @@ public abstract class Img implements ImgI{
             float exclusionVal
         ){
         float cumulativeDiff = 0f;
+        int nPixels = (getWidth() - abs(xOffset)) * (getHeight() - abs(yOffset));
         for (int[] colorPair : pixelPairs(otherImg, xOffset, yOffset)){
             cumulativeDiff += ColorUtil.compareRGB(colorPair[0], colorPair[1]);
-            if (cumulativeDiff > exclusionVal){
+            if (cumulativeDiff / nPixels > exclusionVal){
                 return 1f;
             }
         }
-        int nPixels = getHeight() * getWidth();
         return cumulativeDiff / nPixels;
     }
 
