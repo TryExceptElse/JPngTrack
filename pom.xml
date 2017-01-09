@@ -7,7 +7,18 @@
     <groupId>io.github.tryexceptelse.jpngtrack</groupId>
     <artifactId>jpngtrack</artifactId>
     <version>1.0</version>
-
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
     <dependencies>
 
         <dependency>
@@ -16,6 +27,12 @@
             <version>2.1.0</version>
         </dependency>
 
-    </dependencies>
+        <!-- https://mvnrepository.com/artifact/junit/junit -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+        </dependency>
 
+    </dependencies>
 </project>
