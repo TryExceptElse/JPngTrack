@@ -8,15 +8,15 @@ public class TestJPngTrack extends TestCase {
             throws NullPointerException, IOException {
         String pathA = this.getClass().getClassLoader().getResource(
                 "track_test_1a.png"
-        ).toString();
+        ).getPath();
         String pathB = this.getClass().getClassLoader().getResource(
                 "track_test_1c.png"
-        ).toString();
+        ).getPath();
         float[] result = JPngTrack.translationFromPaths(
-                pathA, pathB
+                pathA, pathB, 52, 52
         );
         // check that result is close enough
-        assertEquals(result[0], 29);
-        assertEquals(result[1], 26);
+        assertEquals(29f, result[0]);
+        assertEquals(-26f, result[1]);
     }
 }

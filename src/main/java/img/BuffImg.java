@@ -101,14 +101,23 @@ class BuffImg extends Img {
                 int pixelY = yOffset + yIndex;
                 // if pixel X and Y are outside bounds of image:
                 //      return null
+                Integer rgb;
                 if (
                         (pixelX < 0 || pixelX >= srcWidth) ||
                         (pixelY < 0 || pixelY >= srcHeight)
                     ){
-                    return null;
+                    rgb = null;
+                } else { // otherwise, get rgb value of pixel at position x,y
+                    rgb = src.getRGB(pixelX, pixelY);
                 }
-                // otherwise, get rgb value of pixel at position x,y
-                return src.getRGB(pixelX, pixelY);
+                // if there's pixels left in this row, increment x
+                if (xIndex < srcWidth){
+                    xIndex ++;
+                } else { // otherwise, increment y and reset x
+                    yIndex ++;
+                    xIndex = 0;
+                }
+                return rgb;
             }
 
             /**

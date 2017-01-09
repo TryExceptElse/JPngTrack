@@ -50,11 +50,19 @@ public abstract class Img implements ImgI{
         float diff; // difference of each comparison
         for (int xOffset = -xIntGate; xOffset < xIntGate; xOffset ++){
             for (int yOffset = -yIntGate; yOffset < yIntGate; yOffset ++){
+                System.out.println(String.format(
+                        "comparing at %s, %s. least diff: %s",
+                        xOffset, yOffset, leastDiff
+                ));
                 diff = diffAtOffset(other, xOffset, yOffset, leastDiff);
                 if (diff < leastDiff){
                     leastDiff = diff;
                     bestXOffset = xOffset;
                     bestYOffset = yOffset;
+                    // if diff is 0, don't bother iterating any more.
+                    if (leastDiff == 0){
+                        return new float[]{(float)xOffset, (float)yOffset};
+                    }
                 }
             }
         }
@@ -162,7 +170,7 @@ public abstract class Img implements ImgI{
             }
 
             public boolean hasNext(){
-                return aIterator.hasNext() && bIterator.hasNonNullLeft();
+                return aIterator.hasNonNullLeft() && bIterator.hasNext();
             }
 
             public int[] next(){

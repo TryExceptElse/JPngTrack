@@ -48,6 +48,13 @@ public final class JPngTrack {
     ) throws IOException{
         Img imgA = Img.fromPath(pathA);
         Img imgB = Img.fromPath(pathB);
+        // if either gate is zero, consider it (nearly) unlimited on that axis.
+        if (xGate == 0f){
+            xGate = (float)imgA.getWidth() - 1;
+        }
+        if (yGate == 0f){
+            yGate = (float)imgB.getHeight() - 1;
+        }
         return imgA.appMotion(imgB, xGate, yGate);
     }
 }
