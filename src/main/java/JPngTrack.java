@@ -33,7 +33,7 @@ public final class JPngTrack {
      * returned.
      * xGate and yGate may be passed to limit results to translations
      * smaller than passed x and y values. This helps avoid
-     * nonsense results.
+     * nonsense results, and dramatically speeds results.
      * @param pathA: String
      * @param pathB: String
      * @param xGate: float
