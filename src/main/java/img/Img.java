@@ -3,6 +3,7 @@ package img;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.stream.StreamSupport;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.max;
@@ -45,31 +46,25 @@ public abstract class Img implements ImgI{
         }
         int xIntGate = (int) xGate;
         int yIntGate = (int) yGate;
-        float leastDiff = 1f;
-        int bestXOffset = 0;
-        int bestYOffset = 0;
-        float diff; // difference of each comparison
-        int xOffset;
-        int yOffset;
-        for (int[] offsets : new SpiralCoordinates(xIntGate * 2, yIntGate * 2)){
-            xOffset = offsets[0];
-            yOffset = offsets[1];
-            diff = diffAtOffset(other, xOffset, yOffset, leastDiff);
-            System.out.println(String.format(
-                    "compared at %s, %s. diff: %s least diff: %s",
-                    xOffset, yOffset, diff, leastDiff
-            ));
-            if (diff < leastDiff){
-                leastDiff = diff;
-                bestXOffset = xOffset;
-                bestYOffset = yOffset;
-                // if diff is 0, don't bother iterating any more.
-                if (leastDiff == 0){
-                    return new float[]{(float)xOffset, (float)yOffset};
+        EvaluationData data = new EvaluationData();
+        Iterable<int[]> offsetIter =
+                new SpiralCoordinates(xIntGate * 2, yIntGate * 2);
+        // make stream of offsets and for each, find difference
+        StreamSupport.stream(offsetIter.spliterator(), false)
+            .forEach(offsets -> {
+                int xOffset, yOffset;
+                float diff; // difference of each comparison
+                xOffset = offsets[0];
+                yOffset = offsets[1];
+                diff = diffAtOffset(other, xOffset, yOffset, data.leastDiff);
+                if (diff < data.leastDiff){
+                    data.leastDiff = diff;
+                    data.bestXOffset = xOffset;
+                    data.bestYOffset = yOffset;
                 }
-            }
-        }
-        return new float[]{(float)bestXOffset, (float)bestYOffset};
+            });
+        // work in parallel to find the best x and y match.
+        return new float[]{(float)data.bestXOffset, (float)data.bestYOffset};
     }
 
     /**
@@ -277,6 +272,16 @@ public abstract class Img implements ImgI{
                 y += dy;
                 return pos;
             }
+        }
+    }
+
+    /** Holds data used to calculate difference fraction at offset in parallel */
+    private class EvaluationData {
+        private float leastDiff;
+        private int bestXOffset, bestYOffset;
+
+        private EvaluationData(){
+            leastDiff = 1f;
         }
     }
 }
