@@ -12,6 +12,9 @@ import static java.lang.Math.max;
  * Class handling pixel accessing and other methods for a passed image
  */
 public abstract class Img implements ImgI{
+    // create object used as a lock for multithreaded processes
+    private final static Object evaluationLock = new Object();
+
     /**
      * Factory method taking a String path and returning an Img
      * @return Img
@@ -44,27 +47,72 @@ public abstract class Img implements ImgI{
                     other.getWidth(), other.getHeight()
             ));
         }
-        int xIntGate = (int) xGate;
-        int yIntGate = (int) yGate;
-        EvaluationData data = new EvaluationData();
-        Iterable<int[]> offsetIter =
-                new SpiralCoordinates(xIntGate * 2, yIntGate * 2);
-        // make stream of offsets and for each, find difference
-        StreamSupport.stream(offsetIter.spliterator(), false)
-            .forEach(offsets -> {
-                int xOffset, yOffset;
-                float diff; // difference of each comparison
-                xOffset = offsets[0];
-                yOffset = offsets[1];
-                diff = diffAtOffset(other, xOffset, yOffset, data.leastDiff);
-                if (diff < data.leastDiff){
-                    data.leastDiff = diff;
-                    data.bestXOffset = xOffset;
-                    data.bestYOffset = yOffset;
-                }
-            });
-        // work in parallel to find the best x and y match.
-        return new float[]{(float)data.bestXOffset, (float)data.bestYOffset};
+        EvaluationData data = new EvaluationData(other, xGate, yGate);
+        // work in parallel w to find the best x and y match.
+        int nProcessors = data.nLiveThreads =
+                Runtime.getRuntime().availableProcessors();
+        Thread[] threads = new Thread[nProcessors];
+        for (int i = 0; i < nProcessors; i++){
+            threads[i] = new Thread(() -> evaluate(data));
+            threads[i].start();
+        }
+        // wait for lock object to be released by all threads evaluating offsets
+        synchronized(evaluationLock) {
+            try {
+                evaluationLock.wait();
+            } catch (InterruptedException ignore) {}
+        }
+        return data.bestOffset;
+    }
+
+    /**
+     * Evaluation loop that is run by each thread evaluating
+     * different offsets.
+     * @param data
+     */
+    private void evaluate(EvaluationData data){
+        int[] offset; // current x, y offset
+        // while evaluation is underway...
+        while (data.offsetIterator.hasNext()){
+            // first get next offset to test from iterator
+            synchronized (data.offsetIterator){
+                // two threads should not simultaneously ask for a new
+                // pair of offsets.
+                offset = data.offsetIterator.next(); // x and y offset
+            }
+            evaluateOffset(data, offset);
+        }
+        // if iterator has no further position inside bound,
+        // decrement number of live threads
+        data.nLiveThreads --;
+        if (data.nLiveThreads <= 0){
+            // if there are now no threads left running,
+            // unlock evaluation lock.
+            synchronized (evaluationLock){
+                evaluationLock.notify();
+            }
+        }
+    }
+
+    /**
+     * Evaluates a single pair of x, y offsets to see what the
+     * difference ratio is.
+     * @param data: EvaluationData
+     * @param offset: int[] x, y
+     */
+    private void evaluateOffset(EvaluationData data, int[] offset){
+        assert offset.length == 2;
+        float diff = diffAtOffset(
+                data.img,
+                offset[0],
+                offset[1],
+                data.leastDiff
+        );
+        if (diff < data.leastDiff){
+            data.leastDiff = diff;
+            data.bestOffset =
+                    new float[] {(float) offset[0], (float) offset[1]};
+        }
     }
 
     /**
@@ -199,8 +247,7 @@ public abstract class Img implements ImgI{
     }
 
     private class SpiralCoordinates implements Iterable<int[]>{
-        int width;
-        int height;
+        private final int width, height;
 
         /**
          * Constructs spiral iterable.
@@ -215,8 +262,8 @@ public abstract class Img implements ImgI{
         }
 
         private class SpiralIterator implements Iterator<int[]>{
-            int height;     // height of area to iterate in
-            int width;      // width of area
+            final int height;     // height of area to iterate in
+            final int width;      // width of area
             int r;          // maximum radius of spiral
             int x;          // current x position
             int y;          // current y position
@@ -278,10 +325,18 @@ public abstract class Img implements ImgI{
     /** Holds data used to calculate difference fraction at offset in parallel */
     private class EvaluationData {
         private float leastDiff;
-        private int bestXOffset, bestYOffset;
+        private float[] bestOffset;
+        private final Iterator<int[]> offsetIterator;
+        private final Img img;
+        private int nLiveThreads;
 
-        private EvaluationData(){
+        private EvaluationData(Img comparisonImg, float xGate, float yGate){
             leastDiff = 1f;
+            img = comparisonImg;
+            offsetIterator = new SpiralCoordinates(
+                    (int)xGate * 2,
+                    (int)yGate * 2
+            ).iterator();
         }
     }
 }
